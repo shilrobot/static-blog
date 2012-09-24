@@ -33,6 +33,13 @@ class Post(object):
 		self.contents_markdown = src_text[split_idx+len(SPLITTER):]
 		self.contents_html = markdown2.markdown(self.contents_markdown, extras=self.builder.config.get('markdown_extras'))
 
+class PostGroup(object):
+	def __init__(self, index, posts):
+		self.index = index
+		self.posts = posts[:]
+		self.newer = None
+		self.older = None
+		
 class Builder(object):
 	def __init__(self, config_path):
 		self.config = yaml.load(codecs.open('config.yml', 'r', 'utf-8'))
@@ -68,24 +75,35 @@ class Builder(object):
 				'post':post
 			})
 			
-		# paginate
-		post_groups = [[]]
+		# group posts into several per page
+		curr_list = []
+		curr_pg_idx = 0
+		post_groups = []
+		posts_per_group = int(self.config.get('posts_per_page'))
 		for post in posts:
-			curr_group = post_groups[-1]
-			if len(curr_group) >= int(self.config.get('posts_per_page')):
-				curr_group = []
-				post_groups.append(curr_group)
-			curr_group.append(post)
-			
-		for post_group_index, post_group in enumerate(post_groups):
-			if post_group_index == 0:
+			curr_list.append(post)
+			if len(curr_list) >= posts_per_group:
+				post_groups.append(PostGroup(curr_pg_idx, curr_list))
+				curr_list = []
+				curr_pg_idx += 1
+		if len(curr_list) > 0:
+			post_groups.append(PostGroup(curr_pg_idx, curr_list))
+		
+		# link up previous/next references
+		for post_group in post_groups:
+			if post_group.index > 0:
+				post_group.newer = post_groups[post_group.index-1]
+			if post_group.index < (len(post_groups)-1):
+				post_group.older = post_groups[post_group.index+1]
+		
+		for post_group in post_groups:
+			if post_group.index == 0:
 				output_name = 'index.html'
 			else:
-				output_name = '%d.html' % (post_group_index+1)
+				output_name = '%d.html' % (post_group.index+1)
 			self.render_to_file(self.config['templates']['post_group'], output_name, {
-				'posts':post_group
+				'post_group':post_group
 			})
-		#pprint.pprint(post_groups)
 		
 	def render_to_file(self, template_name, output_path, template_args):
 		template_args = template_args.copy()

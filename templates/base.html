@@ -1,46 +1,50 @@
+{% macro render_post(post) %}
+  <div class="post">
+    <h1 class="post-title">{{post.title}}</h1>
+    <div class="post-date">{{post.date|pretty_date}}</div>
+    {{post.contents_html|safe}}
+  </div>
+{% endmacro -%}
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<title>{% block title %}{% endblock %} - {{site.title}}</title>
-<meta charset="utf-8"/>
-<!--
-<link href="css/some-stylesheet.css"
-      rel="stylesheet"/>
-<script src="scripts/some-script.js">
-</script>
--->
-<style type="text/css">
-body {
-  font-family: "Helvetica Neue", helvetica, arial, sans-serif;
-  
-  background-color: #101010;
-  margin:0;
-}
-#center_column {
-  width: 550px;
-  margin: 0 auto 0 auto;
-  padding: 0 20px;
-  padding-top: 30px;
-  color:#D0D0D0;
-  line-height:16pt;
-}
-a, a:link, a:hover, a:active, a:visited {
-  color:#1be0b9;
-  text-decoration:none;
-}
-a:hover, a:active {
-  text-decoration:underline;
-}
-.post-date {
-  color:gray;
-}
-</style>
-</head>
-<body>
-<div id="center_column">
-{% block body %}
-{% endblock %}
-</div>
-
-</body>
+  <head>
+    <meta charset="utf-8"/>
+    <title>{% block title %}{% block page_title %}{% endblock %} - {{site.title}}{% endblock %}</title>
+    <style type="text/css">
+    body {
+      font-family: "Helvetica Neue", helvetica, arial, sans-serif;
+      
+      background-color: #101010;
+      margin:0;
+    }
+    #center_column {
+      width: 550px;
+      margin: 0 auto 0 auto;
+      padding: 0 20px;
+      padding-top: 30px;
+      color:#D0D0D0;
+      line-height:16pt;
+    }
+    a, a:link, a:hover, a:active, a:visited {
+      color:#1be0b9;
+      text-decoration:none;
+    }
+    a:hover, a:active {
+      text-decoration:underline;
+    }
+    .post-date {
+      color:gray;
+    }
+    .post {
+      margin-bottom:6em;
+    }
+    </style>
+  </head>
+  <body>
+    <div id="center_column">
+      {% block body %}
+      {% endblock %}
+    </div>
+  </body>
 </html>
