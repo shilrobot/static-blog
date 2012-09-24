@@ -40,4 +40,4 @@ more closely, and I will gain momentum by sharing the details with all of you.
 
 Stay tuned!
 
-*--- Scott*
+--- Scott

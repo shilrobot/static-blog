@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{post.title}}{% endblock %}
+{% block body %}
+  <h1 class="post-title" >{{post.title}}</h1>
+  <div class="post-date">{{post.date|pretty_date}}</div>
+  {{post.contents_html}}
+{% endblock %}

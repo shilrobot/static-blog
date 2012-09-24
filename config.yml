@@ -1,0 +1,10 @@
+dirs:
+    output: output
+    templates: templates
+    posts: posts
+templates:
+    post: post.html
+    archive: archive.html
+gzip: false
+site:
+    title: blog.shilbert.com

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>{{post.title}}{# - {{site.title}}#}</title>
+<title>{% block title %}{% endblock %} - {{site.title}}</title>
 <meta charset="utf-8"/>
 <!--
 <link href="css/some-stylesheet.css"
@@ -13,7 +13,7 @@
 body {
   font-family: "Helvetica Neue", helvetica, arial, sans-serif;
   
-  background-color:#101010;
+  background-color: #101010;
   margin:0;
 }
 #center_column {
@@ -34,14 +34,13 @@ a:hover, a:active {
 .post-date {
   color:gray;
 }
-
 </style>
 </head>
 <body>
 <div id="center_column">
-<h1 class="post-title" >{{post.title}}</h1>
-<div class="post-date">{{post.pretty_date|safe}}</div>
-{{post.html}}
+{% block body %}
+{% endblock %}
 </div>
+
 </body>
 </html>
