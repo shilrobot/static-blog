@@ -22,7 +22,7 @@ class Post(object):
 
 		self.date = datetime(*[int(s) for s in basename.split('-')[:3]])
 		self.name = non_ext
-		self.title = yaml_header.get('title')
+		self.title = yaml_header.get('title','')
 		self.contents_markdown = src_text[split_idx+len(SPLITTER):]
 
 	@property
@@ -47,7 +47,7 @@ def pretty_date(when):
 if __name__ == '__main__':
 	global CONFIG, OUTPUT_DIR, env
 	CONFIG = yaml.load(codecs.open('config.yml', 'r', 'utf-8'))
-	print CONFIG
+	#print CONFIG
 	OUTPUT_DIR = CONFIG['dirs']['output']
 	POSTS_DIR = CONFIG['dirs']['posts']
 
