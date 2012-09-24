@@ -4,7 +4,11 @@ dirs:
     posts: posts
 templates:
     post: post.html
+    post_group: post_group.html
     archive: archive.html
-gzip: false
+gzip: no
+markdown_extras:
+    - smarty-pants
 site:
     title: blog.shilbert.com
+posts_per_page: 2

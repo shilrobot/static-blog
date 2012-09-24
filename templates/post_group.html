@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Archives{% endblock %}
+{% block body %}
+  {% for post in posts %}
+    <h1 class="post-title" >{{post.title}}</h1>
+    <div class="post-date">{{post.date|pretty_date}}</div>
+    {{post.contents_html|safe}}
+  {% endfor %}
+{% endblock %}

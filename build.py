@@ -6,6 +6,7 @@ import codecs
 import gzip
 import yaml
 from datetime import datetime
+import pprint
 
 def pretty_date(when):
 	month = when.strftime('%B ')
@@ -13,7 +14,8 @@ def pretty_date(when):
 	return month+day_year
 
 class Post(object):
-	def __init__(self, src_path):
+	def __init__(self, builder, src_path):
+		self.builder = builder
 		basename = os.path.basename(src_path)
 		non_ext, ext = os.path.splitext(basename)
 
@@ -29,10 +31,7 @@ class Post(object):
 		self.name = non_ext
 		self.title = yaml_header.get('title','')
 		self.contents_markdown = src_text[split_idx+len(SPLITTER):]
-
-	@property
-	def contents_html(self):
-		return markdown2.markdown(self.contents_markdown, extras=['smarty-pants'])
+		self.contents_html = markdown2.markdown(self.contents_markdown, extras=self.builder.config.get('markdown_extras'))
 
 class Builder(object):
 	def __init__(self, config_path):
@@ -60,15 +59,37 @@ class Builder(object):
 		for f in os.listdir(posts_dir):
 			post_path = os.path.join(posts_dir, f)
 			if os.path.isfile(post_path) and f.endswith('.md'):
-				posts.append(Post(post_path))
+				posts.append(Post(self, post_path))
+				
+		posts = sorted(posts, key=lambda p:p.date, reverse=True)
 
 		for post in posts:
 			self.render_to_file(self.config['templates']['post'], post.name+'.html', {
-				'site': self.config.get('site'),
 				'post':post
 			})
+			
+		# paginate
+		post_groups = [[]]
+		for post in posts:
+			curr_group = post_groups[-1]
+			if len(curr_group) >= int(self.config.get('posts_per_page')):
+				curr_group = []
+				post_groups.append(curr_group)
+			curr_group.append(post)
+			
+		for post_group_index, post_group in enumerate(post_groups):
+			if post_group_index == 0:
+				output_name = 'index.html'
+			else:
+				output_name = '%d.html' % (post_group_index+1)
+			self.render_to_file(self.config['templates']['post_group'], output_name, {
+				'posts':post_group
+			})
+		#pprint.pprint(post_groups)
 		
 	def render_to_file(self, template_name, output_path, template_args):
+		template_args = template_args.copy()
+		template_args['site'] = self.config.get('site')
 		template = self.env.get_template(template_name)
 		final_html_utf8 = template.render(template_args).encode('utf-8')
 		with open(os.path.join(self.output_dir, output_path), 'wb') as f:
