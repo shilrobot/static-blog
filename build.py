@@ -9,6 +9,7 @@ from datetime import datetime
 import pprint
 import time
 import email.utils
+import StringIO
 
 def pretty_date(when):
 	month = when.strftime('%B ')
@@ -208,8 +209,22 @@ class Builder(object):
 		with open(output_path, 'wb') as f:
 			f.write(final_html_utf8)
 		if self.config.get('gzip'):
-			with gzip.open(output_path+'gz', 'wb') as f:
-				f.write(final_html_utf8)
+			# This is a bunch of BS we have to do to make a gzip archive
+			# WITHOUT the original filename included in the header.
+			# (It is a waste to transfer, and redbot.org doesn't seem
+			# to be able to parse it, although everything else does OK.)
+			# This is equivalent to the -n flag of gzip.
+			sio = StringIO.StringIO()
+			gzf = gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9)
+			gzf.write(final_html_utf8)
+			gzf.flush()
+			final_html_utf8_gzip = sio.getvalue()
+			#print 'Compress: %s: saved %d%%' % (
+			#	output_path+'.gz',				
+			#	100.0*(float(len(final_html_utf8) - len(final_html_utf8_gzip))/len(final_html_utf8)),
+			#)
+			with open(output_path+'.gz','wb') as f:
+				f.write(final_html_utf8_gzip)
 	
 	def make_dirs(self,path):
 		dir = os.path.dirname(path)
