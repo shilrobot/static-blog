@@ -1,0 +1,14 @@
+AddEncoding gzip .gz
+
+# NOTE: files compressed with gzip should use the -n
+# flag or else Redbot won't be able to read them...
+RewriteEngine on
+RewriteCond %{HTTP:accept-encoding} gzip
+RewriteCond %{REQUEST_FILENAME} !\.gz$
+RewriteCond %{REQUEST_FILENAME}.gz -f
+RewriteRule ^(.*)\.html$ $1.html.gz [L]
+
+Header add Vary Accept-Encoding
+ExpiresActive on
+ExpiresByType text/html A120
+Header append Cache-Control must-revalidate
