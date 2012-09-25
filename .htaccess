@@ -1,13 +1,21 @@
 AddEncoding gzip .gz
 
-# NOTE: files compressed with gzip should use the -n
-# flag or else Redbot won't be able to read them...
-RewriteEngine on
-RewriteCond %{HTTP:accept-encoding} gzip
-RewriteCond %{REQUEST_FILENAME} !\.gz$
-RewriteCond %{REQUEST_FILENAME}.gz -f
-RewriteRule ^(.*)\.html$ $1.html.gz [L]
+<IfModule mod_rewrite.c>
+    # NOTE: files compressed with gzip should use the -n
+    # flag or else Redbot won't be able to read them...
+    RewriteEngine on
+    
+    # If Accept-Encoding contains gzip...
+    RewriteCond %{HTTP:Accept-Encoding} gzip
+    # And there's a pre-compressed version available...
+    RewriteCond %{REQUEST_FILENAME}.gz -f
+    # Server the pre-compressed version
+    RewriteRule ^(.*)$ $1.gz [L]
+</IfModule>
 
+AddCharset UTF-8 .html
+
+# TODO: Make these conditional where it makes sense
 Header add Vary Accept-Encoding
 ExpiresActive on
 ExpiresByType text/html A120
