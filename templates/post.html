@@ -1,5 +1,25 @@
 {% extends "base.html" %}
 {% block page_title %}{{post.title}}{% endblock %}
 {% block body %}
+
   {{ render_post(post) }}
+  
+  <div class="post-nav">
+    <div class="nav-left">
+      {% if post.newer %}
+        <a href="{{post.newer.uri}}">&larr; {{post.newer.title}}</a>
+      {% else %}
+        &nbsp;
+      {% endif %}
+    </div>
+    
+    <div class="nav-right">
+      {% if post.older %}
+        <a href="{{post.older.uri}}">{{post.older.title}} &rarr;</a>
+      {% else %}
+        &nbsp;
+      {% endif %}
+    </div>
+  </div>
+    
 {% endblock %}

@@ -1,7 +1,15 @@
-{% macro render_post(post) %}
+{% macro render_post(post, linkify=False) %}
   <div class="post">
-    <h1 class="post-title">{{post.title}}</h1>
-    <div class="post-date">{{post.date|pretty_date}}</div>
+    <h1 class="post-title">
+    {% if linkify %}
+      <a href="{{post.uri}}">
+        {{post.title}}
+      </a>
+    {% else %}
+      {{post.title}}
+    {% endif %}
+    </h1>
+    <div class="dim">{{post.date|pretty_date}}</div>
     {{post.contents_html|safe}}
   </div>
 {% endmacro -%}
@@ -21,8 +29,8 @@
     #center_column {
       width: 550px;
       margin: 0 auto 0 auto;
-      padding: 0 20px;
-      padding-top: 30px;
+      padding-top: 28pt;
+      padding-bottom: 50pt;
       color:#D0D0D0;
       line-height:16pt;
     }
@@ -33,11 +41,48 @@
     a:hover, a:active {
       text-decoration:underline;
     }
-    .post-date {
+    .dim {
       color:gray;
     }
-    .post {
-      margin-bottom:6em;
+    .between-posts {
+      height:4em;
+    }
+    
+    h1 a:link, h1 a:visited {
+      color:#D0D0D0;
+    }
+    h1 a:hover, h1 a:active {
+      color:#1be0b9;
+    }
+    .post-nav, .pg-nav {
+      overflow:hidden;
+      width:100%;
+    }
+    .nav-left {
+      float:left;
+    }
+    .nav-center {
+      float:left;
+      text-align:center;
+    }
+    .nav-right {
+      float:right;
+      text-align:right;
+    }
+    .pg-nav .nav-left {
+      width:35%;
+    }
+    .pg-nav .nav-center {
+      width:30%;
+    }
+    .pg-nav .nav-right {
+      width:35%;
+    }
+    .post-nav .nav-left {
+      width:45%;
+    }
+    .post-nav .nav-right {
+      width:45%;
     }
     </style>
   </head>

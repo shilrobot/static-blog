@@ -2,6 +2,32 @@
 {% block title %}{{site.title}}{% endblock %}
 {% block body %}
   {% for post in post_group.posts %}
-    {{ render_post(post) }}
+    {% if not loop.first %}
+    <div class="between-posts">&nbsp;</div>
+    {% endif %}
+    {{ render_post(post, linkify=True) }}    
   {% endfor %}
+  
+  <div class="pg-nav">
+    <div class="nav-left">
+      {% if post_group.newer %}
+        <a href="{{post_group.newer.uri}}">&larr; Newer posts</a>
+      {% else %}
+        &nbsp;
+      {% endif %}
+    </div>
+    
+    <div class="nav-center dim">
+      Page {{ post_group.index+1}} of {{ post_groups|length }}
+    </div>
+    
+    <div class="nav-right">
+      {% if post_group.older %}
+        <a href="{{post_group.older.uri}}">Older posts &rarr;</a>
+      {% else %}
+        &nbsp;
+      {% endif %}
+    </div>
+  </div>
+  
 {% endblock %}
