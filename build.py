@@ -12,10 +12,38 @@ def pretty_date(when):
 	month = when.strftime('%B ')
 	day_year = when.strftime('%d, %Y').lstrip('0')
 	return month+day_year
-
-class Post(object):
-	def __init__(self, builder, src_path):
+	
+class Resource(object):
+	def __init__(self, builder):
 		self.builder = builder
+
+	def base_uri(self):
+		raise NotImplementedError("Resouce.base_uri() must be implemented")
+		
+	@property
+	def uri(self):
+		return self.builder.prefix + self.base_uri()
+		
+	@property
+	def full_uri(self):
+		return 'http://%s%s%s' % (self.builder.config['site']['hostname'],
+							      self.builder.prefix,
+								  self.base_uri())
+			
+	@property
+	def output_path(self):
+		uri = self.base_uri()
+		if uri.endswith('/'):
+			uri += 'index.html'
+		parts = uri.split('/')
+		assert '..' not in parts
+		assert '.' not in parts
+		uri = uri.lstrip('/')
+		return os.path.join(self.builder.output_dir, *uri.split('/'))
+			
+class Post(Resource):
+	def __init__(self, builder, src_path):
+		super(Post, self).__init__(builder)
 		basename = os.path.basename(src_path)
 		non_ext, ext = os.path.splitext(basename)
 
@@ -35,24 +63,30 @@ class Post(object):
 		self.older = None
 		self.newer = None
 	
-	@property
-	def uri(self):
-		return self.name + '.html'
+	def base_uri(self):
+		return '/'+self.name.replace('-','/',3)+'/'
 		
-class PostGroup(object):
+class PostGroup(Resource):
 	def __init__(self, builder, index, posts):
-		self.builder = builder
+		super(PostGroup, self).__init__(builder)
 		self.index = index
 		self.posts = posts[:]
 		self.newer = None
 		self.older = None
 		
-	@property
-	def uri(self):
+	def base_uri(self):
 		if self.index == 0:
-			return 'index.html'
+			return '/'
 		else:
-			return '%d.html' % (self.index+1)
+			return '/pages/%d/' % (self.index+1)
+			
+class RSS(Resource):
+	def base_uri(self):
+		return '/rss.xml'
+		
+class Favicon(Resource):
+	def base_uri(self):
+		return '/favicon.ico'
 		
 class Builder(object):
 	def __init__(self, config_path):
@@ -61,6 +95,13 @@ class Builder(object):
 	@property
 	def output_dir(self):
 		return self.config['dirs']['output']
+		
+	@property
+	def prefix(self):
+		pf = self.config['site'].get('prefix')
+		if not pf:
+			pf = ''
+		return pf
 		
 	def build(self):
 		self.env = jinja2.Environment(loader=jinja2.FileSystemLoader(self.config['dirs']['templates']),
@@ -74,6 +115,8 @@ class Builder(object):
 				f_path = os.path.join(self.output_dir, f)
 				if os.path.isfile(f_path):
 					os.unlink(f_path)
+				elif os.path.isdir(f_path):
+					shutil.rmtree(f_path)
 
 		posts_dir = self.config['dirs']['posts']
 		posts = []
@@ -116,31 +159,51 @@ class Builder(object):
 		
 		self.posts = posts
 		self.post_groups = post_groups
+		self.rss = RSS(self)
+		self.favicon = Favicon(self)
 		
 		for post in posts:
-			self.render_to_file(self.config['templates']['post'], post.uri, {
+			self.render_to_file(self.config['templates']['post'], post, {
 				'post':post
 			})
 			
 		for post_group in post_groups:
-			self.render_to_file(self.config['templates']['post_group'], post_group.uri, {
+			self.render_to_file(self.config['templates']['post_group'], post_group, {
 				'post_group':post_group,
 			})
+			
+		self.render_to_file(self.config['templates']['rss'], self.rss, {
+			'rss_posts':int(self.config['rss_posts']),
+		})
 		
-	def render_to_file(self, template_name, output_path, template_args):
+		if 'favicon' in self.config:
+			self.make_dirs(self.favicon.output_path)
+			shutil.copyfile(self.config['favicon'], self.favicon.output_path)
+		
+	def render_to_file(self, template_name, resource, template_args):
+		output_path = resource.output_path
+		print 'Render: %s -> %s' % (resource.uri, output_path)
 		template_args = template_args.copy()
 		template_args.update({
 			'site': self.config.get('site'),
 			'posts': self.posts,
-			'post_groups': self.post_groups
+			'post_groups': self.post_groups,
+			'rss': self.rss,
+			'home':self.post_groups[0]
 		})
 		template = self.env.get_template(template_name)
 		final_html_utf8 = template.render(template_args).encode('utf-8')
-		with open(os.path.join(self.output_dir, output_path), 'wb') as f:
+		self.make_dirs(output_path)
+		with open(output_path, 'wb') as f:
 			f.write(final_html_utf8)
 		if self.config.get('gzip'):
-			with gzip.open(os.path.join(self.output_dir, output_path+'gz'), 'wb') as f:
+			with gzip.open(output_path+'gz', 'wb') as f:
 				f.write(final_html_utf8)
+	
+	def make_dirs(self,path):
+		dir = os.path.dirname(path)
+		if not os.path.exists(dir):
+			os.makedirs(dir)
 
 if __name__ == '__main__':
 	Builder('config.yml').build()

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rss version="2.0">
+<channel>
+	<title>{{site.title}}</title>
+	<link>{{home.full_uri}}</link>
+  
+	{% if site.description %}
+		<description>{{site.description}}</description>
+	{% endif %}
+
+	{% for post in posts[:rss_posts] %}
+		<item>
+			<title>{{post.title}}</title>
+			<link>{{post.full_uri}}</link>
+			<guid>{{post.full_uri}}</guid>
+			<description>
+				{{post.contents_html|safe}}
+			</description>
+		</item>
+	{% endfor %}
+</channel>
+</rss>

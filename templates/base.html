@@ -19,6 +19,8 @@
   <head>
     <meta charset="utf-8"/>
     <title>{% block title %}{% block page_title %}{% endblock %} - {{site.title}}{% endblock %}</title>
+    {# TODO: Need to use the *FULL* RSS url #}
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="{{rss.full_uri}}">
     <style type="text/css">
     body {
       font-family: "Helvetica Neue", helvetica, arial, sans-serif;
@@ -28,9 +30,7 @@
     }
     #center_column {
       width: 550px;
-      margin: 0 auto 0 auto;
-      padding-top: 28pt;
-      padding-bottom: 50pt;
+      margin: 40pt auto;
       color:#D0D0D0;
       line-height:16pt;
     }
@@ -47,9 +47,8 @@
     .between-posts {
       height:4em;
     }
-    
-    h1 a:link, h1 a:visited {
-      color:#D0D0D0;
+    h1, h1 a:link, h1 a:visited {
+      color:#F0F0F0;
     }
     h1 a:hover, h1 a:active {
       color:#1be0b9;

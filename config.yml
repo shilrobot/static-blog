@@ -6,9 +6,15 @@ templates:
     post: post.html
     post_group: post_group.html
     archive: archive.html
-gzip: no
+    rss: rss.xml
+gzip: yes
 markdown_extras:
     - smarty-pants
 site:
     title: blog.shilbert.com
+    description: Scott Hilbert's personal blog
+    hostname: localhost:8000
+#    prefix: /static
 posts_per_page: 2
+rss_posts: 10
+#favicon: favicon.ico

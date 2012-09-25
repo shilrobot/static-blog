@@ -6,16 +6,16 @@
   
   <div class="post-nav">
     <div class="nav-left">
-      {% if post.newer %}
-        <a href="{{post.newer.uri}}">&larr; {{post.newer.title}}</a>
+      {% if post.older %}
+        <a href="{{post.older.uri}}">&larr; {{post.older.title}}</a>
       {% else %}
         &nbsp;
       {% endif %}
     </div>
     
     <div class="nav-right">
-      {% if post.older %}
-        <a href="{{post.older.uri}}">{{post.older.title}} &rarr;</a>
+      {% if post.newer %}
+        <a href="{{post.newer.uri}}">{{post.newer.title}} &rarr;</a>
       {% else %}
         &nbsp;
       {% endif %}

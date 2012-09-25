@@ -10,20 +10,22 @@
   
   <div class="pg-nav">
     <div class="nav-left">
-      {% if post_group.newer %}
-        <a href="{{post_group.newer.uri}}">&larr; Newer posts</a>
+      {% if post_group.older %}
+        <a href="{{post_group.older.uri}}">&larr; Older posts</a>
       {% else %}
         &nbsp;
       {% endif %}
     </div>
     
+    {#
     <div class="nav-center dim">
       Page {{ post_group.index+1}} of {{ post_groups|length }}
     </div>
+    #}
     
     <div class="nav-right">
-      {% if post_group.older %}
-        <a href="{{post_group.older.uri}}">Older posts &rarr;</a>
+      {% if post_group.newer %}
+        <a href="{{post_group.newer.uri}}">Newer posts &rarr;</a>
       {% else %}
         &nbsp;
       {% endif %}
