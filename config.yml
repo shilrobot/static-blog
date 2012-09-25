@@ -17,4 +17,4 @@ site:
 #    prefix: /static
 posts_per_page: 2
 rss_posts: 10
-#favicon: favicon.ico
+favicon: favicon.ico

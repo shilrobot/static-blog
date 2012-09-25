@@ -7,11 +7,18 @@ import gzip
 import yaml
 from datetime import datetime
 import pprint
+import time
+import email.utils
 
 def pretty_date(when):
 	month = when.strftime('%B ')
 	day_year = when.strftime('%d, %Y').lstrip('0')
 	return month+day_year
+	
+def rfc822_date(when):
+	when_tuple = when.timetuple()
+	when_timestamp = time.mktime(when_tuple)
+	return email.utils.formatdate(when_timestamp)
 	
 class Resource(object):
 	def __init__(self, builder):
@@ -55,6 +62,7 @@ class Post(Resource):
 		assert split_idx >= 0
 		yaml_header = yaml.load(src_text[:split_idx])
 
+		self.publish = bool(yaml_header.get('publish',True))
 		self.date = datetime(*[int(s) for s in basename.split('-')[:3]])
 		self.name = non_ext
 		self.title = yaml_header.get('title','')
@@ -107,6 +115,7 @@ class Builder(object):
 		self.env = jinja2.Environment(loader=jinja2.FileSystemLoader(self.config['dirs']['templates']),
 									  autoescape=True)
 		self.env.filters['pretty_date'] = pretty_date
+		self.env.filters['rfc822_date'] = rfc822_date
 		
 		if not os.path.exists(self.output_dir):
 			os.makedirs(self.output_dir)
@@ -123,7 +132,9 @@ class Builder(object):
 		for f in os.listdir(posts_dir):
 			post_path = os.path.join(posts_dir, f)
 			if os.path.isfile(post_path) and f.endswith('.md'):
-				posts.append(Post(self, post_path))
+				post = Post(self, post_path)
+				if post.publish:
+					posts.append(post)
 				
 		posts = sorted(posts, key=lambda p:p.date, reverse=True)
 		assert len(posts) > 0

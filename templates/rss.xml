@@ -13,6 +13,7 @@
 			<title>{{post.title}}</title>
 			<link>{{post.full_uri}}</link>
 			<guid>{{post.full_uri}}</guid>
+			<pubDate>{{post.date|rfc822_date}}</pubDate>
 			<description>
 				{{post.contents_html|safe}}
 			</description>
