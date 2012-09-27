@@ -243,9 +243,16 @@ class Site(object):
                 elif os.path.isdir(f_path):
                     shutil.rmtree(f_path)
 
+        # Render all resources
+        seen_paths = set()
         for res in self.resources:
             output_path = res.output_path
             print 'Render: %s -> %s' % (res.uri, output_path)
+
+            # Warn about dupicates
+            assert output_path not in seen_paths, ("Duplicate path: %s" % output_path)
+            seen_paths.add(output_path)
+
             bytes = res.render()
             make_dirs(output_path)
             with open(output_path, 'wb') as f:
