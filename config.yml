@@ -1,16 +1,14 @@
-dirs:
-    output: output
-    templates: templates
-    posts: posts
+output_dir: output
+templates_dir: templates
+posts_dir: posts
 gzip: yes
 markdown_extras:
     - smarty-pants
-site:
-    title: blog.shilbert.com
-    description: Scott Hilbert's personal blog
-#    hostname: localhost:8000
-#    prefix: /static
-    hostname: blog.shilbert.com
+title: blog.shilbert.com
+description: Scott Hilbert's personal blog
+hostname: localhost:8000
+#prefix: /static
+#hostname: blog.shilbert.com
 posts_per_page: 2
 rss_posts: 10
-#favicon: favicon.ico
+#favicon_path: favicon.ico

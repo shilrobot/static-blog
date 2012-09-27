@@ -2,13 +2,13 @@
 <rss version="2.0">
 <channel>
 	<title>{{site.title}}</title>
-	<link>{{home.full_uri}}</link>
+	<link>{{site.home.full_uri}}</link>
   
 	{% if site.description %}
 		<description>{{site.description}}</description>
 	{% endif %}
 
-	{% for post in posts[:rss_posts] %}
+	{% for post in site.posts[:site.rss_posts] %}
 		<item>
 			<title>{{post.title}}</title>
 			<link>{{post.full_uri}}</link>

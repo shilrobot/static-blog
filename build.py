@@ -9,6 +9,8 @@ from datetime import datetime
 import time
 import email.utils
 import StringIO
+import glob
+import sys
 
 
 def pretty_date(when):
@@ -38,6 +40,16 @@ def split_into_groups(items, n):
         yield items[i:i+n]
 
 
+def link_newer_older(items):
+    """Taking a list in reverse chronological order (newest item first),
+    link items to each other using the 'newer' and 'older' properties.
+    The value of 'newer' is None for the first item, and 'older' is None
+    for the last item."""
+    for (n, item) in enumerate(items):
+        item.newer = items[n - 1] if n > 0 else None
+        item.older = items[n + 1] if n < (len(items)-1) else None
+
+
 class Resource(object):
     def __init__(self, site):
         self.site = site
@@ -51,13 +63,14 @@ class Resource(object):
 
     @property
     def full_uri(self):
-        return 'http://%s%s%s' % (self.site.config['site']['hostname'],
-                                  self.site.prefix,
+        return 'http://%s%s%s' % (self.hostname,
+                                  self.prefix,
                                   self.base_uri())
 
     @property
     def output_path(self):
-        # TODO: These checks probably ought to be done elsewhere
+        # TODO: These checks probably ought to be done elsewhere,
+        # possibly in the same place we do URL collision checks when we do that
         uri = self.base_uri()
         if uri.endswith('/'):
             uri += 'index.html'
@@ -68,29 +81,37 @@ class Resource(object):
             assert x not in parts, "Unwanted url segment: %s in %s (%s)" % (repr(x), parts, self.base_uri())
         return os.path.join(self.site.output_dir, *uri.split('/'))
 
+    def render_template(self, template_name, **kwargs):
+        # Merge 'kwargs' and {site: self.site} into one dict
+        template_args = kwargs.copy()
+        template_args['site'] = self.site
+        template = self.site.env.get_template(template_name)
+        return template.render(template_args).encode('utf-8')
+
 
 class Post(Resource):
     def __init__(self, site, src_path):
         super(Post, self).__init__(site)
-        self.older = None
-        self.newer = None
-
         # The name of the file without directories, e.g. '2012-09-24-title.md'
         basename = os.path.basename(src_path)
         # Break the filename apart from the extension - e.g. ('2012-09-24-title', '.md')
-        self.name = os.path.splitext(basename)[0]
-        # Date is the year/month/day from the beginning of the filename
-        self.date = datetime(*[int(s) for s in basename.split('-')[:3]])
+        sans_ext = os.path.splitext(basename)[0]
+        # Date is the year/month/day from the beginning of the filename.
+        self.date = datetime(*[int(s) for s in sans_ext.split('-')[:3]])
+        self.name = '-'.join(sans_ext.split('-')[3:])
 
         # Perform markdown formatting w/ metadata extraction
-        extras = self.site.config.get('markdown_extras',[]) + ['metadata']
+        extras = self.site.markdown_extras + ['metadata']
         self.contents_html = markdown2.markdown(codecs.open(src_path, "r", "utf-8").read(),
                                                 extras=extras)
         self.title = self.contents_html.metadata['title']
         self.publish = (self.contents_html.metadata.get('publish','true') in ['true','yes','on'])
 
     def base_uri(self):
-        return '/' + self.name.replace('-', '/', 3) + '/'
+        return self.date.strftime('/%Y/%m/%d/') + self.name + '/'
+
+    def render(self):
+        return self.render_template('post.html', post=self)
 
 
 class PostGroup(Resource):
@@ -98,8 +119,6 @@ class PostGroup(Resource):
         super(PostGroup, self).__init__(site)
         self.index = index
         self.posts = posts[:]
-        self.newer = None
-        self.older = None
 
     def base_uri(self):
         if self.index == 0:
@@ -107,127 +126,131 @@ class PostGroup(Resource):
         else:
             return '/pages/%d/' % (self.index + 1)
 
+    def render(self):
+        return self.render_template('post_group.html', post_group=self)
+
 
 class RSS(Resource):
     def base_uri(self):
         return '/rss.xml'
+
+    def render(self):
+        return self.render_template('rss.xml')
 
 
 class Favicon(Resource):
     def base_uri(self):
         return '/favicon.ico'
 
+    def render(self):
+        with open(self.config['favicon'],'rb') as f:
+            return f.read()
+            
 
 class Site(object):
     def __init__(self, config_path):
-        self.config = yaml.load(codecs.open('config.yml', 'r', 'utf-8'))
-        self.output_dir = self.config['dirs']['output']
-        self.prefix = self.config['site'].get('prefix')
-        if not self.prefix:
-            self.prefix = ''
+        self.read_config(config_path)
 
-        # Load all the posts
-        posts_dir = self.config['dirs']['posts']
-        self.posts = []
-        for f in os.listdir(posts_dir):
-            post_path = os.path.join(posts_dir, f)
-            if os.path.isfile(post_path) and f.endswith('.md'):
-                post = Post(self, post_path)
-                if post.publish:
-                    self.posts.append(post)
+        # Load all the posts in reverse chronological order
+        self.posts = [
+            Post(self, post_path)
+            for post_path in glob.glob(os.path.join(self.posts_dir, '*.md'))
+        ]
 
-        # Sort posts in reverse chronological order
-        self.posts.sort(key=lambda p: p.date, reverse=True)
+        # Filter out 'unpublished' posts & sort in reverse chronological order
+        self.posts = sorted([p for p in self.posts if p.publish],
+                            key=lambda p: p.date, reverse=True)
         assert len(self.posts) > 0
 
         # Link up previous/next references
-        for (n, post) in enumerate(self.posts):
-            post.index = len(self.posts) - n - 1
-            if n > 0:
-                post.newer = self.posts[n - 1]
-            if n < (len(self.posts) - 1):
-                post.older = self.posts[n + 1]
+        link_newer_older(self.posts)
 
         # Group posts into several per page
-        posts_per_group = int(self.config.get('posts_per_page'))
-        self.post_groups = [PostGroup(self, n, posts) 
-                            for n, posts in enumerate(split_into_groups(self.posts, posts_per_group))]
+        self.post_groups = [PostGroup(self, n, posts)
+                            for n, posts in enumerate(split_into_groups(self.posts, self.posts_per_page))]
 
         # link up previous/next references
-        for post_group in self.post_groups:
-            if post_group.index > 0:
-                post_group.newer = self.post_groups[post_group.index - 1]
-            if post_group.index < (len(self.post_groups) - 1):
-                post_group.older = self.post_groups[post_group.index + 1]
+        link_newer_older(self.post_groups)
 
-        self.rss = RSS(self)
-        self.favicon = Favicon(self)
-        self.resources = self.posts + self.post_groups + [self.rss, self.favicon]
+        self.home = self.post_groups[0]
+        self.resources = self.posts + self.post_groups
+
+        if self.enable_rss:
+            self.rss = RSS(self)
+            self.resources.append(self.rss)
+        else:
+            self.rss = None
+
+        if self.favicon_path:
+            self.favicon = Favicon(self)
+            self.resources.append(self.favicon)
+        else:
+            self.favicon = None
+
+    def read_config(self, config_path):
+        config = yaml.load(codecs.open(config_path, 'r', 'utf-8'))
+        config_dir = os.path.dirname(config_path)
+
+        self.output_dir = os.path.join(config_dir, config['output_dir'])
+        self.posts_dir = os.path.join(config_dir, config['posts_dir'])
+        self.templates_dir = os.path.join(config_dir, config['templates_dir'])
+        self.prefix = config.get('prefix')
+        if not self.prefix:
+            self.prefix = ''
+        self.rss_posts = int(config.get('rss_posts', 10))
+        self.hostname = config['hostname']
+        self.posts_per_page = int(config.get('posts_per_page', 10))
+        self.description = config['description']
+        self.gzip = bool(config.get('gzip', False))
+        self.favicon_path = config.get('favicon')
+        self.enable_rss = bool(config.get('rss', True))
+        self.markdown_extras = config.get('markdown_extras',[])
+
+        self.config = config
 
     def render(self):
         # Set up Jinja2 environment
-        self.env = jinja2.Environment(loader=jinja2.FileSystemLoader(self.config['dirs']['templates']),
+        self.env = jinja2.Environment(loader=jinja2.FileSystemLoader(self.templates_dir),
                                       autoescape=True)
         self.env.filters['pretty_date'] = pretty_date
         self.env.filters['rfc822_date'] = rfc822_date
 
-        # Ensure output directory exists
-        if os.path.exists(self.output_dir):
-            shutil.rmtree(self.output_dir)
-        os.makedirs(self.output_dir)
+        # Ensure output directory exists, but clear it out.
+        # Don't delete the whole directory since it is useful to just start SimpleHTTPServer
+        # from that directory to serve locally.
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        else:
+            for f in os.listdir(self.output_dir):
+                f_path = os.path.join(self.output_dir, f)
+                if os.path.isfile(f):
+                    os.unlink(f)
+                elif os.path.isdir(f):
+                    shutil.rmtree(self.output_dir)
 
-        for post in self.posts:
-            self.render_to_file('post.html', post, {
-                'post': post
-            })
-
-        for post_group in self.post_groups:
-            self.render_to_file('post_group.html', post_group, {
-                'post_group': post_group,
-            })
-
-        self.render_to_file('rss.xml', self.rss, {
-            'rss_posts': int(self.config['rss_posts']),
-        })
-
-        if 'favicon' in self.config:
-            make_dirs(self.favicon.output_path)
-            shutil.copyfile(self.config['favicon'], self.favicon.output_path)
-
-    def render_to_file(self, template_name, resource, template_args):
-        output_path = resource.output_path
-        print 'Render: %s -> %s' % (resource.uri, output_path)
-        template_args = template_args.copy()
-        template_args.update({
-            'site': self.config.get('site'),
-            'posts': self.posts,
-            'post_groups': self.post_groups,
-            'rss': self.rss,
-            'home': self.post_groups[0]
-        })
-        template = self.env.get_template(template_name)
-        final_html_utf8 = template.render(template_args).encode('utf-8')
-        make_dirs(output_path)
-        with open(output_path, 'wb') as f:
-            f.write(final_html_utf8)
-        if self.config.get('gzip'):
-            # This is a bunch of BS we have to do to make a gzip archive
-            # WITHOUT the original filename included in the header.
-            # (It is a waste to transfer, and redbot.org doesn't seem
-            # to be able to parse it, although everything else does OK.)
-            # This is equivalent to the -n flag of gzip.
-            sio = StringIO.StringIO()
-            gzf = gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9)
-            gzf.write(final_html_utf8)
-            gzf.flush()
-            final_html_utf8_gzip = sio.getvalue()
-            #print 'Compress: %s: saved %d%%' % (
-            #   output_path+'.gz',
-            #   100.0*(float(len(final_html_utf8) - len(final_html_utf8_gzip))/len(final_html_utf8)),
-            #)
-            with open(output_path + '.gz', 'wb') as f:
-                f.write(final_html_utf8_gzip)
+        for res in self.resources:
+            output_path = res.output_path
+            print 'Render: %s -> %s' % (res.uri, output_path)
+            bytes = res.render()
+            make_dirs(output_path)
+            with open(output_path, 'wb') as f:
+                f.write(bytes)
+            if self.gzip:
+                # This is a bunch of BS we have to do to make a gzip archive
+                # WITHOUT the original filename included in the header.
+                # (It is a waste to transfer, and redbot.org doesn't seem
+                # to be able to parse it, although everything else does OK.)
+                # This is equivalent to the -n flag of gzip.
+                sio = StringIO.StringIO()
+                gzf = gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9)
+                gzf.write(bytes)
+                gzf.flush()
+                with open(output_path + '.gz', 'wb') as f:
+                    f.write(sio.getvalue())
 
 
 if __name__ == '__main__':
-    Site('config.yml').render()
+    path = 'config.yml'
+    if len(sys.argv) > 1:
+        path = sys.argv[1]
+    Site(path).render()
