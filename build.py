@@ -73,8 +73,8 @@ class Resource(object):
 
     @property
     def full_uri(self):
-        return 'http://%s%s%s' % (self.hostname,
-                                  self.prefix,
+        return 'http://%s%s%s' % (self.site.hostname,
+                                  self.site.prefix,
                                   self.base_uri())
 
     @property
@@ -206,12 +206,13 @@ class Site(object):
         self.posts_dir = os.path.join(config_dir, config['posts_dir'])
         self.templates_dir = os.path.join(config_dir, config['templates_dir'])
         self.prefix = config.get('prefix')
-        if not self.prefix:
+        if self.prefix is None:
             self.prefix = ''
         self.rss_posts = int(config.get('rss_posts', 10))
         self.hostname = config['hostname']
         self.posts_per_page = int(config.get('posts_per_page', 10))
-        self.description = config['description']
+        self.title = config['title']
+        self.description = config.get('description','')
         self.gzip = bool(config.get('gzip', False))
         self.favicon_path = config.get('favicon')
         if self.favicon_path is not None:
