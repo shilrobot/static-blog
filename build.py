@@ -79,8 +79,6 @@ class Resource(object):
 
     @property
     def output_path(self):
-        # TODO: These checks probably ought to be done elsewhere,
-        # possibly in the same place we do URL collision checks when we do that
         uri = self.base_uri()
         if uri.endswith('/'):
             uri += 'index.html'
