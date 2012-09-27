@@ -2,11 +2,6 @@ dirs:
     output: output
     templates: templates
     posts: posts
-templates:
-    post: post.html
-    post_group: post_group.html
-    archive: archive.html
-    rss: rss.xml
 gzip: yes
 markdown_extras:
     - smarty-pants
@@ -14,7 +9,7 @@ site:
     title: blog.shilbert.com
     description: Scott Hilbert's personal blog
 #    hostname: localhost:8000
-    prefix: /static
+#    prefix: /static
     hostname: blog.shilbert.com
 posts_per_page: 2
 rss_posts: 10
