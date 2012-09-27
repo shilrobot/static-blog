@@ -6,9 +6,9 @@ markdown_extras:
     - smarty-pants
 title: blog.shilbert.com
 description: Scott Hilbert's personal blog
-hostname: localhost:8000
-#prefix: /static
-#hostname: blog.shilbert.com
+#hostname: localhost:8000
+prefix: /static
+hostname: www.shilbert.com
 posts_per_page: 2
 rss: yes
 rss_posts: 10

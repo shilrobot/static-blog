@@ -266,9 +266,8 @@ class Site(object):
                 # to be able to parse it, although everything else does OK.)
                 # This is equivalent to the -n flag of gzip.
                 sio = StringIO.StringIO()
-                gzf = gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9)
-                gzf.write(bytes)
-                gzf.flush()
+                with gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9) as gzf:
+                    gzf.write(bytes)
                 gzpath = output_path + '.gz'
                 with open(gzpath, 'wb') as f:
                     f.write(sio.getvalue())
