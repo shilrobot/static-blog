@@ -51,10 +51,10 @@ def link_newer_older(items):
 
 
 def set_mtime(path, mtime):
-    if mtime is None:
-        return
-    stat = os.stat(path)
-    os.utime(path, (stat.st_atime, mtime))
+    """Set the modification timestamp on a file"""
+    if mtime is not None:
+        stat = os.stat(path)
+        os.utime(path, (stat.st_atime, mtime))
 
 
 class Resource(object):
