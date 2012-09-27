@@ -15,7 +15,7 @@
 			<guid>{{post.full_uri}}</guid>
 			<pubDate>{{post.date|rfc822_date}}</pubDate>
 			<description>
-				{{post.contents_html|safe}}
+				{{post.contents_html}}
 			</description>
 		</item>
 	{% endfor %}
