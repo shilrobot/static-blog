@@ -37,7 +37,7 @@ def make_dirs(filepath):
 def split_into_groups(items, n):
     """Split a list of items into a list of groups of at most n items"""
     for i in range(0, len(items), n):
-        yield items[i:i+n]
+        yield items[i:i + n]
 
 
 def link_newer_older(items):
@@ -47,7 +47,7 @@ def link_newer_older(items):
     for the last item."""
     for (n, item) in enumerate(items):
         item.newer = items[n - 1] if n > 0 else None
-        item.older = items[n + 1] if n < (len(items)-1) else None
+        item.older = items[n + 1] if n < (len(items) - 1) else None
 
 
 def set_mtime(path, mtime):
@@ -113,7 +113,7 @@ class Post(Resource):
         self.contents_html = markdown2.markdown(codecs.open(src_path, "r", "utf-8").read(),
                                                 extras=extras)
         self.title = self.contents_html.metadata['title']
-        self.publish = (self.contents_html.metadata.get('publish','true') in ['true','yes','on'])
+        self.publish = (self.contents_html.metadata.get('publish', 'true') in ['true', 'yes', 'on'])
 
     def base_uri(self):
         return self.date.strftime('/%Y/%m/%d/') + self.name + '/'
@@ -151,7 +151,7 @@ class Favicon(Resource):
         return '/favicon.ico'
 
     def render(self):
-        with open(self.site.favicon_path,'rb') as f:
+        with open(self.site.favicon_path, 'rb') as f:
             return f.read()
 
     def mtime(self):
@@ -212,13 +212,13 @@ class Site(object):
         self.hostname = config['hostname']
         self.posts_per_page = int(config.get('posts_per_page', 10))
         self.title = config['title']
-        self.description = config.get('description','')
+        self.description = config.get('description', '')
         self.gzip = bool(config.get('gzip', False))
         self.favicon_path = config.get('favicon')
         if self.favicon_path is not None:
             self.favicon_path = os.path.join(config_dir, self.favicon_path)
         self.enable_rss = bool(config.get('rss', True))
-        self.markdown_extras = config.get('markdown_extras',[])
+        self.markdown_extras = config.get('markdown_extras', [])
 
         self.config = config
 
