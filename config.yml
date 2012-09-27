@@ -10,5 +10,6 @@ hostname: localhost:8000
 #prefix: /static
 #hostname: blog.shilbert.com
 posts_per_page: 2
+rss: yes
 rss_posts: 10
-#favicon_path: favicon.ico
+favicon: favicon.ico

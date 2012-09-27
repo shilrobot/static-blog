@@ -50,12 +50,22 @@ def link_newer_older(items):
         item.older = items[n + 1] if n < (len(items)-1) else None
 
 
+def set_mtime(path, mtime):
+    if mtime is None:
+        return
+    stat = os.stat(path)
+    os.utime(path, (stat.st_atime, mtime))
+
+
 class Resource(object):
     def __init__(self, site):
         self.site = site
 
     def base_uri(self):
         raise NotImplementedError("Resouce.base_uri() must be implemented")
+
+    def mtime(self):
+        return None
 
     @property
     def uri(self):
@@ -143,9 +153,12 @@ class Favicon(Resource):
         return '/favicon.ico'
 
     def render(self):
-        with open(self.config['favicon'],'rb') as f:
+        with open(self.site.favicon_path,'rb') as f:
             return f.read()
-            
+
+    def mtime(self):
+        return os.stat(self.site.favicon_path).st_mtime
+
 
 class Site(object):
     def __init__(self, config_path):
@@ -181,7 +194,7 @@ class Site(object):
         else:
             self.rss = None
 
-        if self.favicon_path:
+        if self.favicon_path is not None:
             self.favicon = Favicon(self)
             self.resources.append(self.favicon)
         else:
@@ -203,6 +216,8 @@ class Site(object):
         self.description = config['description']
         self.gzip = bool(config.get('gzip', False))
         self.favicon_path = config.get('favicon')
+        if self.favicon_path is not None:
+            self.favicon_path = os.path.join(config_dir, self.favicon_path)
         self.enable_rss = bool(config.get('rss', True))
         self.markdown_extras = config.get('markdown_extras',[])
 
@@ -223,10 +238,10 @@ class Site(object):
         else:
             for f in os.listdir(self.output_dir):
                 f_path = os.path.join(self.output_dir, f)
-                if os.path.isfile(f):
-                    os.unlink(f)
-                elif os.path.isdir(f):
-                    shutil.rmtree(self.output_dir)
+                if os.path.isfile(f_path):
+                    os.unlink(f_path)
+                elif os.path.isdir(f_path):
+                    shutil.rmtree(f_path)
 
         for res in self.resources:
             output_path = res.output_path
@@ -235,6 +250,9 @@ class Site(object):
             make_dirs(output_path)
             with open(output_path, 'wb') as f:
                 f.write(bytes)
+            mtime = res.mtime()
+            if mtime is not None:
+                set_mtime(output_path, mtime)
             if self.gzip:
                 # This is a bunch of BS we have to do to make a gzip archive
                 # WITHOUT the original filename included in the header.
@@ -245,8 +263,11 @@ class Site(object):
                 gzf = gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9)
                 gzf.write(bytes)
                 gzf.flush()
-                with open(output_path + '.gz', 'wb') as f:
+                gzpath = output_path + '.gz'
+                with open(gzpath, 'wb') as f:
                     f.write(sio.getvalue())
+                if mtime is not None:
+                    set_mtime(gzpath, mtime)
 
 
 if __name__ == '__main__':
