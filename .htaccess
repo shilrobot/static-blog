@@ -24,3 +24,8 @@ ExpiresByType text/html A120
 ExpiresByType application/rss+xml A120
 ExpiresByType application/atom+xml A120
 Header append Cache-Control must-revalidate
+
+# Favicon.ico changes very rarely
+<FilesMatch "favicon\.ico(\.gz)?$">
+	ExpiresDefault "access plus 1 day"
+</FilesMatch>

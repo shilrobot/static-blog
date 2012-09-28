@@ -5,21 +5,23 @@
   {{ render_post(post) }}
   
   <div class="post-nav">
-    <div class="nav-left">
-      {% if post.older %}
-        <a href="{{post.older.uri}}">&larr; {{post.older.title}}</a>
-      {% else %}
-        &nbsp;
-      {% endif %}
-    </div>
+
+    {% if post.older %}
+      <div class="nav-left">
+          <a href="{{post.older.uri}}">&larr; {{post.older.title}}</a>
+      </div>
+    {% else %}
+      <div class="nav-left hidden"> &nbsp; </div>
+    {% endif %}
     
-    <div class="nav-right">
-      {% if post.newer %}
-        <a href="{{post.newer.uri}}">{{post.newer.title}} &rarr;</a>
-      {% else %}
-        &nbsp;
-      {% endif %}
-    </div>
+    {% if post.newer %}
+      <div class="nav-right">
+          <a href="{{post.newer.uri}}">{{post.newer.title}} &rarr;</a>
+      </div>
+    {% else %}
+      <div class="nav-right hidden"> &nbsp; </div>
+    {% endif %}
+
   </div>
     
 {% endblock %}

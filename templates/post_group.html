@@ -9,27 +9,22 @@
   {% endfor %}
   
   <div class="pg-nav">
-    <div class="nav-left">
-      {% if post_group.older %}
+    {% if post_group.older %}
+      <div class="nav-left">
         <a href="{{post_group.older.uri}}">&larr; Older posts</a>
-      {% else %}
-        &nbsp;
-      {% endif %}
-    </div>
+      </div>
+    {% else %}
+      <div class="nav-left hidden"> &nbsp; </div>
+    {% endif %}
     
-    {#
-    <div class="nav-center dim">
-      Page {{ post_group.index+1}} of {{ post_groups|length }}
-    </div>
-    #}
-    
-    <div class="nav-right">
-      {% if post_group.newer %}
+    {% if post_group.newer %}
+      <div class="nav-right">
         <a href="{{post_group.newer.uri}}">Newer posts &rarr;</a>
-      {% else %}
-        &nbsp;
-      {% endif %}
-    </div>
+      </div>
+    {% else %}
+      <div class="nav-right hidden"> &nbsp; </div>
+    {% endif %}
+
   </div>
   
 {% endblock %}

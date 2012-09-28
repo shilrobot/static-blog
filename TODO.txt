@@ -1,0 +1,8 @@
+Software:
+-- Support for copying arbitrary static files to the output (e.g. favicon, htaccess, images, etc)
+-- Embedding images (+ uploading to S3 magically?)
+-- Embedding styled code
+
+My blog:
+-- Disqus
+-- Google Analytics
