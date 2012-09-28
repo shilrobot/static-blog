@@ -11,5 +11,8 @@ prefix: /static
 hostname: www.shilbert.com
 posts_per_page: 2
 rss: yes
-rss_posts: 10
+atom: yes
+feed_posts: 10
 favicon: favicon.ico
+author:
+    name: Scott Hilbert

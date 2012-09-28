@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<rss version="2.0">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
 	<title>{{site.title}}</title>
 	<link>{{site.home.full_uri}}</link>
+	<lastBuildDate>{{site.posts[0].date|rfc822_date}}</lastBuildDate>
+	<atom:link href="{{site.rss.full_uri}}" rel="self" type="application/rss+xml" />
   
 	{% if site.description %}
 		<description>{{site.description}}</description>
 	{% endif %}
 
-	{% for post in site.posts[:site.rss_posts] %}
+	{% for post in site.posts[:site.feed_posts] %}
 		<item>
 			<title>{{post.title}}</title>
 			<link>{{post.full_uri}}</link>
+			<!-- TODO: use an actual guid here? -->
 			<guid>{{post.full_uri}}</guid>
 			<pubDate>{{post.date|rfc822_date}}</pubDate>
 			<description>
@@ -19,5 +22,6 @@
 			</description>
 		</item>
 	{% endfor %}
+
 </channel>
 </rss>

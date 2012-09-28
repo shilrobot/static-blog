@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>{{site.title}}</title>
+    <subtitle>{{site.description}}</subtitle>
+    <link href="{{site.atom.full_uri}}" rel="self" />
+    <link href="{{site.home.full_uri}}" />
+    <!-- TODO: feed GUID -->
+    <id>{{site.atom.full_uri}}</id>
+    <updated>{{site.posts[0].date|rfc3339_date}}</updated>
+    <author>
+    	{% if site.author.name %}
+    		<name>{{site.author.name}}</name>
+    	{% endif %}
+    	{% if site.author.email %}
+    		<email>{{site.author.email}}</email>
+    	{% endif %}
+    </author>
+
+    {% for post in site.posts[:site.feed_posts] %}
+	    <entry>
+			<title>{{post.title}}</title>
+			<link rel="alternate" href="{{post.full_uri}}" />
+			<!-- TODO: Post GUID -->
+			<id>{{post.full_uri}}</id>
+			<!-- TODO: 'updated' format -->
+			<updated>{{post.date|rfc3339_date}}</updated>
+			<summary type="html">
+				{{post.contents_html}}
+			</summary>
+	    </entry>
+    {% endfor %}
+</feed>

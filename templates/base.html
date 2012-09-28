@@ -19,7 +19,15 @@
   <head>
     <meta charset="utf-8"/>
     <title>{% block title %}{% block page_title %}{% endblock %} - {{site.title}}{% endblock %}</title>
-    <link rel="alternate" type="application/rss+xml" title="RSS" href="{{site.rss.full_uri}}">
+
+    {% if site.enable_rss %}
+      <link rel="alternate" type="application/rss+xml" title="{{site.title}} RSS feed" href="{{site.rss.full_uri}}">
+    {% endif %}
+
+    {% if site.enable_atom %}
+      <link rel="alternate" type="application/atom+xml" title="{{site.title}} Atom feed" href="{{site.atom.full_uri}}">
+    {% endif %}
+
     <style type="text/css">
     body {
       font-family: "Helvetica Neue", helvetica, arial, sans-serif;      

@@ -27,6 +27,13 @@ def rfc822_date(when):
     return email.utils.formatdate(when_timestamp)
 
 
+def rfc3339_date(when):
+    """Jinja2 filter to return an RFC 3339 formatted date (necessary for Atom feeds)"""
+    # TODO: UTC awareness?
+    assert when.tzinfo is None
+    return when.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def make_dirs(filepath):
     """Make all the directories necessary to be able to create a path at filepath"""
     dir = os.path.dirname(filepath)
@@ -140,10 +147,20 @@ class PostGroup(Resource):
 
 class RSS(Resource):
     def base_uri(self):
-        return '/rss.xml'
+        # Use '.rss' extension to take advantage of Apache mime.types defaults
+        return '/feed.rss'
 
     def render(self):
         return self.render_template('rss.xml')
+
+
+class Atom(Resource):
+    def base_uri(self):
+        # Use '.atom' extension to take advantage of Apache mime.types defaults
+        return '/feed.atom'
+
+    def render(self):
+        return self.render_template('atom.xml')
 
 
 class Favicon(Resource):
@@ -192,6 +209,12 @@ class Site(object):
         else:
             self.rss = None
 
+        if self.enable_atom:
+            self.atom = Atom(self)
+            self.resources.append(self.atom)
+        else:
+            self.atom = None
+
         if self.favicon_path is not None:
             self.favicon = Favicon(self)
             self.resources.append(self.favicon)
@@ -208,7 +231,7 @@ class Site(object):
         self.prefix = config.get('prefix')
         if self.prefix is None:
             self.prefix = ''
-        self.rss_posts = int(config.get('rss_posts', 10))
+        self.feed_posts = int(config.get('feed_posts', 10))
         self.hostname = config['hostname']
         self.posts_per_page = int(config.get('posts_per_page', 10))
         self.title = config['title']
@@ -218,7 +241,9 @@ class Site(object):
         if self.favicon_path is not None:
             self.favicon_path = os.path.join(config_dir, self.favicon_path)
         self.enable_rss = bool(config.get('rss', True))
+        self.enable_atom = bool(config.get('atom', True))
         self.markdown_extras = config.get('markdown_extras', [])
+        self.author = config.get('author', {})
 
         self.config = config
 
@@ -228,6 +253,7 @@ class Site(object):
                                       autoescape=True)
         self.env.filters['pretty_date'] = pretty_date
         self.env.filters['rfc822_date'] = rfc822_date
+        self.env.filters['rfc3339_date'] = rfc3339_date
 
         # Ensure output directory exists, but clear it out.
         # Don't delete the whole directory since it is useful to just start SimpleHTTPServer

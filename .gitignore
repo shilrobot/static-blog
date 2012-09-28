@@ -2,3 +2,4 @@
 env
 virtualenv.py
 output
+deploy.sh
