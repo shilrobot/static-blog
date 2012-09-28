@@ -6,3 +6,4 @@ Software:
 My blog:
 -- Disqus
 -- Google Analytics
+-- CSS Line-height issues mess up multiline titles
