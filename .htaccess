@@ -14,9 +14,13 @@ AddEncoding gzip .gz
 </IfModule>
 
 AddCharset UTF-8 .html
+AddCharset UTF-8 .atom
+AddCharset UTF-8 .rss
 
 # TODO: Make these conditional where it makes sense
 Header add Vary Accept-Encoding
 ExpiresActive on
 ExpiresByType text/html A120
+ExpiresByType application/rss+xml A120
+ExpiresByType application/atom+xml A120
 Header append Cache-Control must-revalidate
