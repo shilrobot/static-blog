@@ -145,7 +145,7 @@ class PostGroup(Resource):
         return self.render_template('post_group.html', post_group=self)
 
 
-class RSS(Resource):
+class RSSFeed(Resource):
     def base_uri(self):
         # Use '.rss' extension to take advantage of Apache mime.types defaults
         return '/feed.rss'
@@ -154,7 +154,7 @@ class RSS(Resource):
         return self.render_template('rss.xml')
 
 
-class Atom(Resource):
+class AtomFeed(Resource):
     def base_uri(self):
         # Use '.atom' extension to take advantage of Apache mime.types defaults
         return '/feed.atom'
@@ -163,21 +163,26 @@ class Atom(Resource):
         return self.render_template('atom.xml')
 
 
-class Favicon(Resource):
+class StaticFile(Resource):
+    def __init__(self, site, src_path, base_uri):
+        super(StaticFile, self).__init__(site)
+        self.src_path = src_path
+        self._base_uri = base_uri
+
     def base_uri(self):
-        return '/favicon.ico'
+        return self._base_uri
 
     def render(self):
-        with open(self.site.favicon_path, 'rb') as f:
+        with open(self.src_path, 'rb') as f:
             return f.read()
 
     def mtime(self):
-        return os.stat(self.site.favicon_path).st_mtime
+        return os.stat(self.src_path).st_mtime
 
 
 class Site(object):
     def __init__(self, config_path):
-        self.read_config(config_path)
+        self._read_config(config_path)
 
         # Load all the posts in reverse chronological order
         self.posts = [
@@ -204,26 +209,44 @@ class Site(object):
         self.resources = self.posts + self.post_groups
 
         if self.enable_rss:
-            self.rss = RSS(self)
+            self.rss = RSSFeed(self)
             self.resources.append(self.rss)
         else:
             self.rss = None
 
         if self.enable_atom:
-            self.atom = Atom(self)
+            self.atom = AtomFeed(self)
             self.resources.append(self.atom)
         else:
             self.atom = None
 
-        if self.favicon_path is not None:
-            self.favicon = Favicon(self)
-            self.resources.append(self.favicon)
-        else:
-            self.favicon = None
+        for static in self.statics:
+            self._process_static(static)
 
-    def read_config(self, config_path):
+    def _process_static(self, static):
+        from_path = static['from']
+        to_path = static['to']
+        if os.path.isdir(from_path):
+            self._add_static_dir(from_path, to_path)
+        else:
+            self._add_static_file(from_path, to_path)
+
+    def _add_static_file(self, from_path, to_path):
+        sf = StaticFile(self, from_path, to_path)
+        self.resources.append(sf)
+
+    def _add_static_dir(self, from_path, to_path):
+        for fn, full_fn in [(x, os.path.join(from_path, x)) for x in os.listdir(from_path)]:
+            if os.path.isdir(full_fn):
+                self._add_static_dir(full_fn, to_path + '/' + fn)
+            else:
+                self._add_static_file(full_fn, to_path + '/' + fn)
+
+    def _read_config(self, config_path):
         config = yaml.load(codecs.open(config_path, 'r', 'utf-8'))
         config_dir = os.path.dirname(config_path)
+
+        self.statics = config.get('statics', [])
 
         self.output_dir = os.path.join(config_dir, config['output_dir'])
         self.posts_dir = os.path.join(config_dir, config['posts_dir'])
@@ -237,13 +260,11 @@ class Site(object):
         self.title = config['title']
         self.description = config.get('description', '')
         self.gzip = bool(config.get('gzip', False))
-        self.favicon_path = config.get('favicon')
-        if self.favicon_path is not None:
-            self.favicon_path = os.path.join(config_dir, self.favicon_path)
         self.enable_rss = bool(config.get('rss', True))
         self.enable_atom = bool(config.get('atom', True))
         self.markdown_extras = config.get('markdown_extras', [])
         self.author = config.get('author', {})
+        self.never_gzip = config.get('never_gzip', ['.png', '.jpg', '.gif'])
 
         self.config = config
 
@@ -274,7 +295,7 @@ class Site(object):
             output_path = res.output_path
             print 'Render: %s -> %s' % (res.uri, output_path)
 
-            # Warn about dupicates
+            # Warn about duplicates
             assert output_path not in seen_paths, ("Duplicate path: %s" % output_path)
             seen_paths.add(output_path)
 
@@ -285,20 +306,37 @@ class Site(object):
             mtime = res.mtime()
             if mtime is not None:
                 set_mtime(output_path, mtime)
+
             if self.gzip:
-                # This is a bunch of BS we have to do to make a gzip archive
-                # WITHOUT the original filename included in the header.
-                # (It is a waste to transfer, and redbot.org doesn't seem
-                # to be able to parse it, although everything else does OK.)
-                # This is equivalent to the -n flag of gzip.
-                sio = StringIO.StringIO()
-                with gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9) as gzf:
-                    gzf.write(bytes)
-                gzpath = output_path + '.gz'
-                with open(gzpath, 'wb') as f:
-                    f.write(sio.getvalue())
-                if mtime is not None:
-                    set_mtime(gzpath, mtime)
+                self._compress(output_path)
+
+    def _compress(self, src_path):
+        for ext in self.never_gzip:
+            if src_path.endswith(ext):
+                return
+
+        src_stats = os.stat(src_path)
+
+        # This is a bunch of BS we have to do to make a gzip archive
+        # WITHOUT the original filename included in the header.
+        # (It is a waste to transfer, and redbot.org doesn't seem
+        # to be able to parse it, although everything else does OK.)
+        # This is equivalent to the -n flag of gzip.
+        sio = StringIO.StringIO()
+        with gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9) as gzf:
+            with open(src_path, "rb") as srcf:
+                gzf.write(srcf.read())
+        gzip_bytes = sio.getvalue()
+
+        # Do not bother actually creating gzip file on disk when gzip was bigger!
+        if len(gzip_bytes) >= src_stats.st_size:
+            return
+
+        gzpath = src_path + '.gz'
+        with open(gzpath, 'wb') as f:
+            f.write(gzip_bytes)
+        # ALWAYS make the gzipped output have the same mtime as the non-gzipped one
+        set_mtime(gzpath, src_stats.st_mtime)
 
 
 if __name__ == '__main__':

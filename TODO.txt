@@ -1,7 +1,7 @@
 Software:
--- Support for copying arbitrary static files to the output (e.g. favicon, htaccess, images, etc)
--- Embedding images (+ uploading to S3 magically?)
+-- Embedding images (+ uploading to S3 magically? w/ hashes in the filename and infinite caching and shit?)
 -- Embedding styled code
+-- Support for multiple "modes" in one config (e.g. staging/production?)
 
 My blog:
 -- Disqus

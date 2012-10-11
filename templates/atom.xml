@@ -22,7 +22,6 @@
 			<link rel="alternate" href="{{post.full_uri}}" />
 			<!-- TODO: Post GUID -->
 			<id>{{post.full_uri}}</id>
-			<!-- TODO: 'updated' format -->
 			<updated>{{post.date|rfc3339_date}}</updated>
 			<summary type="html">
 				{{post.contents_html}}

@@ -3,16 +3,18 @@ templates_dir: templates
 posts_dir: posts
 gzip: yes
 markdown_extras:
-    - smarty-pants
+  - smarty-pants
 title: blog.shilbert.com
 description: Scott Hilbert's personal blog
-#hostname: localhost:8000
+# hostname: localhost:8000
 prefix: /static
 hostname: www.shilbert.com
 posts_per_page: 2
 rss: yes
 atom: yes
 feed_posts: 10
-favicon: favicon.ico
 author:
-    name: Scott Hilbert
+  name: Scott Hilbert
+statics:
+  - from: favicon.ico
+    to: /favicon.ico
