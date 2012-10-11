@@ -308,9 +308,9 @@ class Site(object):
                 set_mtime(output_path, mtime)
 
             if self.gzip:
-                self._compress(output_path)
+                self._compress(output_path, bytes)
 
-    def _compress(self, src_path):
+    def _compress(self, src_path, data):
         for ext in self.never_gzip:
             if src_path.endswith(ext):
                 return
@@ -324,12 +324,11 @@ class Site(object):
         # This is equivalent to the -n flag of gzip.
         sio = StringIO.StringIO()
         with gzip.GzipFile(filename='', mode='w', fileobj=sio, compresslevel=9) as gzf:
-            with open(src_path, "rb") as srcf:
-                gzf.write(srcf.read())
+            gzf.write(data)
         gzip_bytes = sio.getvalue()
 
         # Do not bother actually creating gzip file on disk when gzip was bigger!
-        if len(gzip_bytes) >= src_stats.st_size:
+        if len(gzip_bytes) >= len(data):
             return
 
         gzpath = src_path + '.gz'
